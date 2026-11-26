@@ -1,6 +1,7 @@
 {
-  "guncelleme_zamani": "2026-11-26T14:55:14Z",
+  "guncelleme_zamani": "2026-11-26T19:17:07Z",
   "kaynak": "T.C. Diyanet İşleri Başkanlığı · Din Hizmetleri Genel Müdürlüğü",
+  "ses_motoru": "TR:tr-TR-AhmetNeural + AR:ar-SA-HamedNeural (v2)",
   "guncel": {
     "id": "1353",
     "tarih": "27.11.2026",
@@ -8,7 +9,7 @@
     "tarih_iso": "2026-11-27",
     "baslik": "Yetim",
     "okuma_suresi": "3 dk okuma",
-    "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\n...وَيَسْـَلُونَكَ عَنِ الْيَتَامٰىۜ قُلْ اِصْلََحٌ لَهُمْ خَيْرٌۜ ...\nوَقَالَ رَسُولُ اللِّٰٰ صَلَٰي اللُّٰٰ عَلَيْهِ وَسَلَٰمَ :\nمَنْ قَبَضَ يَتِيمًا بَيْنَ الْمُسْلِمِينَ إِلَى طَعَامِهِ وَشَرَابِهِ\nأَدْخَلَهُ اللُّٰٰ الْجَنَٰةَ الْبَتَٰ ةَ ...",
+    "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\n...وَيَسْأَلُونَكَ عَنِ الْيَتَامٰىۜ قُلْ إِصْلَاحٌ لَهُمْ خَيْرٌۜ ...\nوَقَالَ رَسُولُ اللّٰهِ صَلَّى اللّٰهُ عَلَيْهِ وَسَلَّمَ :\nمَنْ قَبَضَ يَتِيمًا بَيْنَ الْمُسْلِمِينَ إِلَى طَعَامِهِ وَشَرَابِهِ\nأَدْخَلَهُ اللّٰهُ الْجَنَّةَ الْبَتَّةَ ...",
     "bloklar": [
       {
         "tip": "hitap",
@@ -67,9 +68,10 @@
       "5. İbn Mâce, Edeb, 6.",
       "6. Tirmizî, Birr, 14."
     ],
-    "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1353.mp3",
+    "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1353_v2.mp3",
     "diyanet_ses_url": "https://dinhizmetleri.diyanet.gov.tr/Documents/Sesli%20Hutbe%20(Yetim).mp3",
-    "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1353/27112026-cuma-hutbesi-yetim-(sesli-hutbe-t%C3%BCrk%C3%A7e)"
+    "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1353/27112026-cuma-hutbesi-yetim-(sesli-hutbe-t%C3%BCrk%C3%A7e)",
+    "ses_versiyon": 2
   },
   "hutbeler": [
     {
@@ -79,7 +81,7 @@
       "tarih_iso": "2026-11-27",
       "baslik": "Yetim",
       "okuma_suresi": "3 dk okuma",
-      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\n...وَيَسْـَلُونَكَ عَنِ الْيَتَامٰىۜ قُلْ اِصْلََحٌ لَهُمْ خَيْرٌۜ ...\nوَقَالَ رَسُولُ اللِّٰٰ صَلَٰي اللُّٰٰ عَلَيْهِ وَسَلَٰمَ :\nمَنْ قَبَضَ يَتِيمًا بَيْنَ الْمُسْلِمِينَ إِلَى طَعَامِهِ وَشَرَابِهِ\nأَدْخَلَهُ اللُّٰٰ الْجَنَٰةَ الْبَتَٰ ةَ ...",
+      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\n...وَيَسْأَلُونَكَ عَنِ الْيَتَامٰىۜ قُلْ إِصْلَاحٌ لَهُمْ خَيْرٌۜ ...\nوَقَالَ رَسُولُ اللّٰهِ صَلَّى اللّٰهُ عَلَيْهِ وَسَلَّمَ :\nمَنْ قَبَضَ يَتِيمًا بَيْنَ الْمُسْلِمِينَ إِلَى طَعَامِهِ وَشَرَابِهِ\nأَدْخَلَهُ اللّٰهُ الْجَنَّةَ الْبَتَّةَ ...",
       "bloklar": [
         {
           "tip": "hitap",
@@ -138,9 +140,10 @@
         "5. İbn Mâce, Edeb, 6.",
         "6. Tirmizî, Birr, 14."
       ],
-      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1353.mp3",
+      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1353_v2.mp3",
       "diyanet_ses_url": "https://dinhizmetleri.diyanet.gov.tr/Documents/Sesli%20Hutbe%20(Yetim).mp3",
-      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1353/27112026-cuma-hutbesi-yetim-(sesli-hutbe-t%C3%BCrk%C3%A7e)"
+      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1353/27112026-cuma-hutbesi-yetim-(sesli-hutbe-t%C3%BCrk%C3%A7e)",
+      "ses_versiyon": 2
     },
     {
       "id": "1350",
@@ -149,7 +152,7 @@
       "tarih_iso": "2026-11-20",
       "baslik": "Merhamet",
       "okuma_suresi": "3 dk okuma",
-      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\nثُم َّ كَّانَّ مِنَّ ال َّذ۪ينَّ اٰمَّنُوا وَّتَّوَّاصَّوْا بِالص َّبْرِ وَّتَّوَّاصَّوْا\nبِالْمَّرْحَّمَّة ِ . اُ و۬لٰٰٓئِكَّ اَّصْحَّابُ الْمَّيْمَّنَّة ِ .\nوَّقَّالَّ رَّسُولُ اللّ ِٰ صَّل َّي اللّ ُٰ عَّلَّيْهِ وَّسَّل َّمَّ :\nمَّنْ لاَّ يَّرْحَّمِ الن َّاسَّ لاَّ يَّرْحَّمْهُ اللّ ُٰ .",
+      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\nثُمَّ كَانَ مِنَ الَّذ۪ينَ اٰمَنُوا وَتَوَاصَوْا بِالصَبْرِ وَتَوَاصَوْا\nبِالْمَرْحَمَةِ . أُولَٰئِكَ اَصْحَابُ الْمَيْمَنَةِ .\nوَقَالَ رَسُولُ اللّٰهِ صَلَّى اللّٰهُ عَلَيْهِ وَسَلَّمَ :\nمَنْ لاَ يَرْحَمِ النَّاسَ لاَ يَرْحَمْهُ اللّٰهُ .",
       "bloklar": [
         {
           "tip": "hitap",
@@ -198,9 +201,10 @@
         "3. Müslim, Fedâil, 66.",
         "4. Beled, 90/17-18."
       ],
-      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1350.mp3",
+      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1350_v2.mp3",
       "diyanet_ses_url": "https://dinhizmetleri.diyanet.gov.tr/Documents/Sesli%20Hutbe%20(Merhamet).mp3",
-      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1350/20112026-cuma-hutbesi-merhamet-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)"
+      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1350/20112026-cuma-hutbesi-merhamet-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)",
+      "ses_versiyon": 2
     },
     {
       "id": "1342",
@@ -261,9 +265,10 @@
         "2. İsrâ, 17/36.",
         "3. Mü’minûn, 23/3."
       ],
-      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1342.mp3",
+      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1342_v2.mp3",
       "diyanet_ses_url": "https://dinhizmetleri.diyanet.gov.tr/Documents/Sesli%20Hutbe%20(Dijital%20Mecrada%20Ahlak).mp3",
-      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1342/13112026-cuma-hutbesi-dijital-mecrada-ahlak-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)"
+      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1342/13112026-cuma-hutbesi-dijital-mecrada-ahlak-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)",
+      "ses_versiyon": 2
     },
     {
       "id": "1337",
@@ -272,7 +277,7 @@
       "tarih_iso": "2026-11-06",
       "baslik": "İbadet",
       "okuma_suresi": "3 dk okuma",
-      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\nمَنْ عَمِلَ صَالِحاً مِنْ ذَكَرٍ اَوْ اُنْثٰى وَهُوَ مُؤْمِنٌ فَلَنُحْيِيَن َهُ\nحَيٰوةً طَي ِبَةًًۚ وَلَنَجْزِيَن َهُمْ اَجْرَهُمْ بِاَحْسَنِ مَا كَانُوا يَعْمَلُونَ .\nوَقَالَ رَسُولُ اللّ ِٰ صَل َي اللّ ُٰ عَلَيْهِ وَسَل َمَ :\n…إِن َ أَحَ ب َ الْعَمَلِ إِلَى اللّ ِٰ أَدْوَمُهُ وَإِنْ قَل َ .",
+      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\nمَنْ عَمِلَ صَالِحاً مِنْ ذَكَرٍ اَوْ اُنْثٰى وَهُوَ مُؤْمِنٌ فَلَنُحْيِيَنَّهُ\nحَيٰوةً طَيِّبَةًۚ وَلَنَجْزِيَنَّهُمْ اَجْرَهُمْ بِاَحْسَنِ مَا كَانُوا يَعْمَلُونَ .\nوَقَالَ رَسُولُ اللّٰهِ صَلَّى اللّٰهُ عَلَيْهِ وَسَلَّمَ :\n…إِنَ أَحَ بَ الْعَمَلِ إِلَى اللّٰهِ أَدْوَمُهُ وَإِنْ قَلَّ .",
       "bloklar": [
         {
           "tip": "hitap",
@@ -330,9 +335,10 @@
         "4. Ebû Dâvûd, Tatavvu’, 27.",
         "5. Nahl, 16/97."
       ],
-      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1337.mp3",
+      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1337_v2.mp3",
       "diyanet_ses_url": "https://dinhizmetleri.diyanet.gov.tr/Documents/Sesli%20Hutbe%20(%C4%B0badet).mp3",
-      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1337/06112026-cuma-hutbesi-ibadet-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)"
+      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1337/06112026-cuma-hutbesi-ibadet-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)",
+      "ses_versiyon": 2
     },
     {
       "id": "1336",
@@ -341,7 +347,7 @@
       "tarih_iso": "2026-10-30",
       "baslik": "Birlik ve Beraberlik",
       "okuma_suresi": "2 dk okuma",
-      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\nاِنَّٰ اللّٰهَّ يُحِبُٰ الَّٰذ۪ينَّ يُقَّاتِلُونَّ ف۪ي سَّب۪يلِه۪ صَّفًّا كَّاَّنَّٰهُمْ بُنْيَّان\nمَّرْصُوص .\nوَّقَّالَّ رَّسُولُ اللّٰهِ صَّلَّٰي اللّٰهُ عَّلَّيْهِ وَّسَّلَّٰمَّ :\n…عَّلَّيْكُمْ بِالْجَّمَّاعَّةِ وَّإِيَّٰاكُمْ وَّالْفُرْقَّةَّ …",
+      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\nاِنَّ اللّٰهَ يُحِبُّ الَّذ۪ينَ يُقَاتِلُونَ ف۪ي سَب۪يلِه۪ صَفًا كَاَنَّهُمْ بُنْيَان\nمَّرْصُوص .\nوَقَالَ رَسُولُ اللّٰهِ صَلَّى اللّٰهُ عَلَيْهِ وَسَلَّمَ :\n…عَلَيْكُمْ بِالْجَمَاعَةِ وَإِيَّاكُمْ وَالْفُرْقَةَ …",
       "bloklar": [
         {
           "tip": "hitap",
@@ -389,9 +395,10 @@
         "2. Saff, 61/4.",
         "3. Tirmizî, Fiten, 7."
       ],
-      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1336.mp3",
+      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1336_v2.mp3",
       "diyanet_ses_url": "https://dinhizmetleri.diyanet.gov.tr/Documents/Sesli%20Hutbe%20(Birlik%20ve%20Beraberlik-).mp3",
-      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1336/30102026-cuma-hutbesi-birlik-ve-beraberlik-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)"
+      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1336/30102026-cuma-hutbesi-birlik-ve-beraberlik-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)",
+      "ses_versiyon": 2
     },
     {
       "id": "1333",
@@ -400,7 +407,7 @@
       "tarih_iso": "2026-10-23",
       "baslik": "Aile",
       "okuma_suresi": "3 dk okuma",
-      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\nوَاللّٰهُ جَعَلَ لَكُمْ مِنْ بُيُوتِكُمْ سَكَنًا …\nوَ قَالَ رَسُولُ اللّٰهِ صَلَٰي اللّٰهُ عَلَيْهِ وَسَلَٰمَ :\nخَيْرُكُمْ خَيْرُكُمْ لَِِهْلِهِ ...",
+      "arapca_giris": "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ\nوَاللّٰهُ جَعَلَ لَكُمْ مِنْ بُيُوتِكُمْ سَكَنًا …\nوَ قَالَ رَسُولُ اللّٰهِ صَلَّى اللّٰهُ عَلَيْهِ وَسَلَّمَ :\nخَيْرُكُمْ خَيْرُكُمْ لِأَهْلِهِ ...",
       "bloklar": [
         {
           "tip": "hitap",
@@ -458,9 +465,10 @@
         "4. Tirmizî, Menâkıb, 63.",
         "5. Furkân, 25/74."
       ],
-      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1333.mp3",
+      "ai_ses_url": "https://raw.githubusercontent.com/aydincobanogl-coder/alarm-pro-hutbe/main/audio/hutbe_1333_v2.mp3",
       "diyanet_ses_url": "https://dinhizmetleri.diyanet.gov.tr/Documents/Sesli%20Hutbe%20(Aile).mp3",
-      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1333/23102026-cuma-hutbesi-aile-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)"
+      "kaynak_url": "https://dinhizmetleri.diyanet.gov.tr/Detay/1333/23102026-cuma-hutbesi-aile-(sesli-hutbe-t%C3%BCrk%C3%A7e-ingilizce-arap%C3%A7a)",
+      "ses_versiyon": 2
     }
   ]
 }
