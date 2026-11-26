@@ -1,0 +1,42 @@
+name: Haftalık Diyanet Cuma Hutbesi Güncelle
+
+on:
+  schedule:
+    # Her gün 6 saatte bir düzenli kontrol (Diyanet ne zaman yayınlarsa yayınlasın yakalar — Cuma, Bayram, revizyon dahil)
+    - cron: '15 */6 * * *'
+    # Perşembe ve Cuma günleri Türkiye saatiyle 10:30, 12:30, 14:30, 16:30'da ek sık kontrol
+    - cron: '30 7,9,11,13 * * 4,5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-hutbe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu İndir
+        uses: actions/checkout@v4
+
+      - name: Python 3.12 Kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Bağımlılıkları Yükle (pypdf & edge-tts)
+        run: pip install --no-cache-dir pypdf edge-tts
+
+      - name: Diyanet Hutbesini Kontrol Et ve Yapay Zeka Sesini Üret
+        run: python scripts/fetch_hutbe.py
+
+      - name: Değişiklik Varsa Yayınla
+        run: |
+          git config user.name "Alarm-Pro Hutbe Bot"
+          git config user.email "bot@alarmpro.local"
+          git add hutbe.json audio/
+          if git diff --staged --quiet; then
+            echo "Yeni hutbe veya değişiklik yok."
+          else
+            git commit -m "chore: güncel Diyanet Cuma Hutbesi ve yapay zeka sesi güncellendi"
+            git push
+          fi
