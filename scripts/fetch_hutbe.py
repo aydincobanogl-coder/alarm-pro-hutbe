@@ -4,7 +4,8 @@ Diyanet İşleri Başkanlığı Din Hizmetleri Genel Müdürlüğü sayfasından
 haftalık Cuma (ve Bayram) hutbelerini otomatik çeker, temiz JSON formatına dönüştürür
 ve Türkçe kısımları Microsoft Neural Türkçe ses (tr-TR-AhmetNeural),
 Arapça ayet ve hadisleri ise fasih Arapça Neural ses (ar-SA-HamedNeural) ile
-doğal biçimde birleştirerek sesli hutbe MP3 üretir.
+doğal biçimde birleştirerek sesli hutbe MP3 + milisaniye hassasiyetli cümle takip
+zamanlamalarını (`zamanlar`) üretir.
 """
 
 import asyncio
@@ -12,7 +13,6 @@ import datetime
 import html
 import io
 import json
-import os
 import re
 import subprocess
 import sys
@@ -33,14 +33,16 @@ AUDIO_DIR = REPO_ROOT / "audio"
 OUTPUT_JSON = REPO_ROOT / "hutbe.json"
 MAX_ARCHIVE = 6
 
-# Ses sürümü yükseltildiğinde mevcut tüm hutbe MP3'leri otomatik yeniden üretilir
-# ve kullanıcı telefonlarındaki eski önbellek atlanır.
-AUDIO_VERSION = 2
+# Ses sürümü yükseltildiğinde mevcut tüm hutbe MP3'leri ve cümle zamanlamaları
+# otomatik yeniden üretilir; kullanıcı telefonlarındaki eski önbellek atlanır.
+AUDIO_VERSION = 3
 TURKISH_VOICE = "tr-TR-AhmetNeural"
 ARABIC_VOICE = "ar-SA-HamedNeural"
 
 # ISO/IEC 13818-3 uyumlu MPEG-2 Layer III (24kHz, 48kbps, mono) 24ms saf sessizlik karesi
 # (edge-tts'in hem tr-TR-AhmetNeural hem ar-SA-HamedNeural çıktısıyla birebir aynı format)
+MP3_FRAME_BYTES = 144
+MP3_FRAME_MS = 24.0
 SILENT_MP3_FRAME_24MS = b"\xff\xf3\x64\xc4" + (b"\x00" * 140)
 
 AYLAR_TR = [
@@ -164,13 +166,11 @@ def normalize_arabic_display(text: str) -> str:
         if not ln:
             continue
 
-        # 1. Diyanet PDF'lerinde şedde karakteri bazen kelime içinde boşluk + hareke olarak çıkar
-        # (örn: "فَلَنُحْيِيَن َهُ", "طَي ِبَةً", "إِن َ", "قَل َ", "صَل َي", "وَسَل َمَ")
-        # Önce lafza-i celal kalıplarını onar
+        # 1. Lafza-i celal kalıplarını onar
         ln = re.sub(r"الل[\u0651\u0670\s]+([َُِ])(?=\s|$|[.:،؛؟…])", r"اللّٰه\1", ln)
         ln = re.sub(r"الل[\u0651\u0670]{2,}(?=\s|$|[.:،؛؟…])", "اللّٰهُ", ln)
 
-        # Şedde yerine boşluk + hareke gelen durumları düzelt (kelime sonu noktalama hariç)
+        # Şedde yerine boşluk + hareke gelen durumları düzelt
         ln = re.sub(r"(?<=[\u0621-\u064A])\s+([\u064E\u064F\u0650])(?=[\u0621-\u064A])", "\u0651\\1", ln)
         ln = re.sub(r"\bإِن\s+َ\b", "إِنَّ", ln)
         ln = re.sub(r"\bقَل\s+َ(?=\s|$|[.:،؛؟…])", "قَلَّ", ln)
@@ -179,10 +179,10 @@ def normalize_arabic_display(text: str) -> str:
         # 2. Harekelerin önündeki fazladan boşlukları temizle
         ln = re.sub(r"\s+([\u064B-\u065F\u0670\u06D6-\u06ED])", r"\1", ln)
 
-        # 3. Kelimeden kopan ة (ta-i merbuta) ekini birleştir (örn: "الْبَتَٰ ةَ")
+        # 3. Kelimeden kopan ة (ta-i merbuta) ekini birleştir
         ln = re.sub(r"([\u0621-\u064A\u064B-\u065F\u0670])\s+(ة[\u064B-\u065F]*)", r"\1\2", ln)
 
-        # 4. Bazı Diyanet PDF fontlarında tüm üstünler (fatha) şedde+üstün olarak çıkar (>%28 şedde yoğunluğu)
+        # 4. Bazı Diyanet PDF fontlarında tüm üstünler şedde+üstün olarak çıkar (>%28 şedde yoğunluğu)
         ar_letters = len(re.findall(r"[\u0621-\u064A]", ln))
         shaddas = ln.count("\u0651")
         if ar_letters >= 10 and (shaddas / ar_letters) > 0.28:
@@ -193,11 +193,11 @@ def normalize_arabic_display(text: str) -> str:
             ln = ln.replace("ثُمَ", "ثُمَّ").replace("إِنَ", "إِنَّ").replace("اِنَ", "إِنَّ")
             ln = ln.replace("كَاَنَ", "كَأَنَّ").replace("إِيَاكُمْ", "إِيَّاكُمْ")
 
-        # 5. Diyanet PDF'lerinde hareke önündeki ٰ (U+0670) aslında şeddedir (örn: الْجَنَٰةَ -> الْجَنَّةَ)
+        # 5. Hareke önündeki ٰ (U+0670) aslında şeddedir
         ln = re.sub(r"\u0670([\u064E\u064F\u0650])", "\u0651\\1", ln)
         ln = re.sub(r"\u0670\u0651", "\u0651", ln)
 
-        # 6. Salavat kalıbı ("وَقَالَ رَسُولُ اللّٰهِ صَلَّى اللّٰهُ عَلَيْهِ وَسَلَّمَ")
+        # 6. Salavat kalıbı
         ln = re.sub(r"\bوَ\s+قَالَ\b", "وَقَالَ", ln)
         ln = re.sub(r"صَ?لّ?َ?[يى]\s+اللّٰهُ", "صَلَّى اللّٰهُ", ln)
         ln = re.sub(r"صَلَّي(?=\s|$)", "صَلَّى", ln)
@@ -214,17 +214,9 @@ def normalize_arabic_display(text: str) -> str:
     return "\n".join(lines_out)
 
 
-def clean_arabic_for_tts(text: str) -> list[tuple[str, int]]:
-    """
-    Arapça metni fasih Arapça kıraate (ar-SA-HamedNeural) uygun cümle parçalarına
-    ve duraklama sürelerine (ms) dönüştürür.
-    """
-    norm = normalize_arabic_display(text)
-    if not norm:
-        return []
-
-    s = norm
-    # Osmanlı/Resm-i Osmani imlasını modern fasih Arapça TTS imlasına çevir
+def _arabic_line_to_tts(raw_line: str) -> str:
+    """Tek bir Arapça satırı fasih Arapça Neural TTS imlasına çevirir."""
+    s = raw_line
     s = s.replace("اللّٰه", "اللَّه")
     s = s.replace("الرَّحْمٰن", "الرَّحْمَن").replace("الرَّحْمٰن", "الرَّحْمَن")
     s = s.replace("الْيَتَامٰى", "الْيَتَامَى")
@@ -233,61 +225,147 @@ def clean_arabic_for_tts(text: str) -> list[tuple[str, int]]:
     s = s.replace("أُولَٰئِكَ", "أُولَئِكَ")
     s = s.replace("اٰ", "آ")
     s = s.replace("ٰى", "َى")
-    # Hareke taşıyan çıplak elifler fasih Arapça'da hemze-i kat'dır (اَ -> أَ, اِ -> إِ, اُ -> أُ)
     s = s.replace("اَ", "أَ").replace("اِ", "إِ").replace("اُ", "أُ")
     s = s.replace("ـ", "")
-    # TTS'nin okuyamadığı durak işaretleri ve Osmanlıca imale/med işaretlerini temizle
     s = re.sub(r"[\u06EA\u06EC\u06D6-\u06ED\u06DF-\u06E8]", "", s)
     s = s.replace("\u0670", "ا")
-    # Üç nokta ve süsleme işaretlerini temizle
     s = re.sub(r"\.{2,}|…+", " ", s)
     s = re.sub(r"\s*[:،؛]\s*", " ", s)
+    return re.sub(r"\s{2,}", " ", s).strip(" .،؛:")
 
-    raw_lines = [re.sub(r"\s{2,}", " ", ln).strip(" .،؛:") for ln in s.splitlines()]
-    raw_lines = [ln for ln in raw_lines if ln and has_arabic(ln)]
-    if not raw_lines:
+
+def split_arabic_clauses_with_spans(display_text: str) -> list[tuple[int, int, str, int]]:
+    """
+    Ekranda gösterilen `display_text` içindeki Arapça satırları mantıksal kıraat parçalarına
+    (Besmele, Ayet, "Ve kale Resulullahi...", Hadis) böler ve her parçanın
+    `(char_start, char_end, tts_text, pause_after_ms)` bilgisini döner.
+    """
+    if not display_text:
         return []
 
-    # Mantıksal kıraat bölümleri: Besmele / Ayet / "Ve kale Resulullahi..." / Hadis
-    besmele_lines: list[str] = []
-    ayet_lines: list[str] = []
-    salavat_line = ""
-    hadis_lines: list[str] = []
+    line_spans: list[tuple[int, int, str]] = []
+    pos = 0
+    for ln in display_text.split("\n"):
+        ln_start = pos
+        ln_end = pos + len(ln)
+        pos = ln_end + 1
+        if ln.strip() and has_arabic(ln):
+            s_idx = ln_start
+            while s_idx < ln_end and display_text[s_idx].isspace():
+                s_idx += 1
+            e_idx = ln_end
+            while e_idx > s_idx and display_text[e_idx - 1].isspace():
+                e_idx -= 1
+            if e_idx > s_idx:
+                line_spans.append((s_idx, e_idx, display_text[s_idx:e_idx]))
 
+    if not line_spans:
+        return []
+
+    groups: list[tuple[str, list[tuple[int, int, str]]]] = []
     stage = "start"
-    for ln in raw_lines:
-        if stage == "start" and ("بِسْمِ اللَّهِ" in ln or "بسم الله" in ln):
-            besmele_lines.append(ln)
+    for span in line_spans:
+        tts_ln = _arabic_line_to_tts(span[2])
+        if not tts_ln or not has_arabic(tts_ln):
+            continue
+        if stage == "start" and ("بِسْمِ اللَّهِ" in tts_ln or "بسم الله" in tts_ln):
+            groups.append(("besmele", [span]))
             stage = "ayet"
-        elif re.search(r"قَالَ\s+رَسُولُ", ln):
-            salavat_line = ln
+        elif re.search(r"قَالَ\s+رَسُولُ", tts_ln):
+            groups.append(("salavat", [span]))
             stage = "hadis"
         elif stage == "hadis":
-            hadis_lines.append(ln)
+            if groups and groups[-1][0] == "hadis":
+                groups[-1][1].append(span)
+            else:
+                groups.append(("hadis", [span]))
         else:
-            ayet_lines.append(ln)
+            if groups and groups[-1][0] == "ayet":
+                groups[-1][1].append(span)
+            else:
+                groups.append(("ayet", [span]))
             stage = "ayet"
 
-    clauses: list[tuple[str, int]] = []
-    if besmele_lines:
-        clauses.append((" ".join(besmele_lines) + ".", 480))
-    if ayet_lines:
-        clauses.append((" ".join(ayet_lines) + ".", 560))
-    if salavat_line:
-        clauses.append((salavat_line + ":", 320))
-    if hadis_lines:
-        clauses.append((" ".join(hadis_lines) + ".", 650))
+    clauses: list[tuple[int, int, str, int]] = []
+    for kind, spans in groups:
+        c_start = spans[0][0]
+        c_end = spans[-1][1]
+        tts_parts = [_arabic_line_to_tts(x[2]) for x in spans]
+        tts_joined = " ".join(p for p in tts_parts if p).strip()
+        if not tts_joined:
+            continue
+        if kind == "besmele":
+            clauses.append((c_start, c_end, tts_joined + ".", 480))
+        elif kind == "ayet":
+            clauses.append((c_start, c_end, tts_joined + ".", 560))
+        elif kind == "salavat":
+            clauses.append((c_start, c_end, tts_joined + ":", 320))
+        else:
+            clauses.append((c_start, c_end, tts_joined + ".", 620))
 
     return clauses
 
 
+def split_turkish_sentences_with_spans(text: str) -> list[tuple[int, int, str]]:
+    """
+    Ekranda gösterilen Türkçe paragrafı `(char_start, char_end, cumle)` olarak böler.
+    `Hz.`, `(s.a.s)`, `(a.s.)`, `(r.a.)`, `(c.c.)`, `vb.`, `vs.` gibi kısaltmalardan bölmez.
+    """
+    spans: list[tuple[int, int, str]] = []
+    n = len(text)
+    start = 0
+    i = 0
+
+    while i < n:
+        ch = text[i]
+        if ch in ".!?…":
+            j = i + 1
+            while j < n and text[j] in ".!?…":
+                j += 1
+            while j < n and text[j] in "\"”’')":
+                j += 1
+            m_fn = re.match(r"\s*\[\d{1,2}\]", text[j:])
+            if m_fn:
+                j += m_fn.end()
+
+            prefix = text[max(0, i - 14):i + 1].lower()
+            is_abbr = bool(
+                re.search(r"(?:\bhz|\bs\.a|\ba\.s|\br\.a|\bc\.c|\bvb|\bvs|\bdr|\bprof|\b\d)\.$", prefix)
+                or re.search(r"\([a-z]\.[a-z]\.?[a-z]?\.?$", prefix)
+            )
+            at_end = j >= n or bool(re.match(r"\s+", text[j:]))
+            if not is_abbr and at_end:
+                s_idx = start
+                while s_idx < j and text[s_idx].isspace():
+                    s_idx += 1
+                e_idx = j
+                while e_idx > s_idx and text[e_idx - 1].isspace():
+                    e_idx -= 1
+                if e_idx > s_idx:
+                    spans.append((s_idx, e_idx, text[s_idx:e_idx]))
+                start = j
+                i = j
+                continue
+        i += 1
+
+    if start < n:
+        s_idx = start
+        while s_idx < n and text[s_idx].isspace():
+            s_idx += 1
+        e_idx = n
+        while e_idx > s_idx and text[e_idx - 1].isspace():
+            e_idx -= 1
+        if e_idx > s_idx:
+            spans.append((s_idx, e_idx, text[s_idx:e_idx]))
+
+    return spans
+
+
 def clean_turkish_text_for_tts(text: str) -> str:
-    """Türkçe hutbe paragrafını akıcı ve doğal okunuş için temizler."""
+    """Türkçe hutbe cümlesini akıcı ve doğal okunuş için temizler."""
     t = text
-    # Dipnot referanslarını [1], [2] veya bitişik rakamları temizle
     t = re.sub(r"\[\d{1,2}\]", "", t)
     t = re.sub(r"([.!?\"”’…])\s*\d{1,2}(?=\s|$|,|;)", r"\1", t)
-    # Dini kısaltmaları saygılı ve doğal okunuşuna aç
     t = re.sub(r"\(\s*s\.?\s*a\.?\s*[sv]\.?\s*\)", " sallallahu aleyhi ve sellem ", t, flags=re.I)
     t = re.sub(r"\(\s*a\.?\s*s\.?\s*\)", " aleyhisselam ", t, flags=re.I)
     t = re.sub(r"\(\s*r\.?\s*a\.?\s*\)", " radıyallahu anh ", t, flags=re.I)
@@ -296,52 +374,107 @@ def clean_turkish_text_for_tts(text: str) -> str:
     return re.sub(r"\s{2,}", " ", t).strip()
 
 
-def build_tts_segments(
-    baslik: str,
-    tarih_uzun: str,
-    arapca_giris: str,
-    bloklar: list[dict],
-) -> list[tuple[str, str, int]]:
+def _normalize_alnum_tr(s: str) -> str:
+    """Türkçe harf duyarlı yalnızca harf/rakam karşılaştırma anahtarı."""
+    s = s.replace("İ", "i").replace("I", "ı").lower()
+    return re.sub(r"[^\w]", "", s, flags=re.UNICODE)
+
+
+def _align_sentences_to_word_boundaries(
+    sentence_spans: list[tuple[int, int, str]],
+    tts_sentences: list[str],
+    word_boundaries: list[tuple[int, int, str]],
+    seg_offset_ms: int,
+    seg_duration_ms: int,
+    hedef_id: int,
+) -> list[dict]:
     """
-    Hutbenin tamamını sırasıyla (dil, metin, sonrasındaki_duraklama_ms) parçalarına ayırır:
-    - Türkçe giriş başlığı (tr-TR-AhmetNeural)
-    - Arapça açılış ayet ve hadisleri (ar-SA-HamedNeural)
-    - Hutbe gövdesi: Türkçe paragraflar (tr-TR-AhmetNeural) ve varsa gövde içi Arapça bloklar (ar-SA-HamedNeural)
+    Edge TTS `WordBoundary` zaman damgalarını karakter-tüketim yöntemiyle
+    her cümlenin ekrandaki `(char_start, char_end)` aralığına milisaniye hassasiyetle eşler.
     """
-    segments: list[tuple[str, str, int]] = []
+    if not sentence_spans:
+        return []
 
-    intro = f"{tarih_uzun} Cuma Hutbesi. Konumuz: {baslik}."
-    segments.append(("tr", intro, 480))
+    if len(sentence_spans) == 1:
+        c_start, c_end, _ = sentence_spans[0]
+        if word_boundaries:
+            t0 = seg_offset_ms + word_boundaries[0][0]
+            t1 = seg_offset_ms + word_boundaries[-1][1]
+        else:
+            t0 = seg_offset_ms
+            t1 = seg_offset_ms + seg_duration_ms
+        return [{"hedef": hedef_id, "b": c_start, "s": c_end, "t0": int(t0), "t1": int(max(t0 + 150, t1))}]
 
-    # Arapça açılış ayet ve hadisleri -> Fasih Arapça Yapay Zeka Sesi
-    if arapca_giris:
-        for ar_clause, pause_ms in clean_arabic_for_tts(arapca_giris):
-            segments.append(("ar", ar_clause, pause_ms))
+    if not word_boundaries:
+        # Yedek: karakter uzunluğuna orantılı dağıtım
+        total_chars = max(1, sum(len(t) for t in tts_sentences))
+        cur = float(seg_offset_ms)
+        out = []
+        for (c_start, c_end, _), tts_s in zip(sentence_spans, tts_sentences):
+            dur = seg_duration_ms * (len(tts_s) / total_chars)
+            out.append({
+                "hedef": hedef_id,
+                "b": c_start,
+                "s": c_end,
+                "t0": int(round(cur)),
+                "t1": int(round(cur + dur)),
+            })
+            cur += dur
+        return out
 
-    # Gövde bloklarını dil değişim noktalarından bölerek sırayla ekle
-    tr_buffer: list[str] = []
+    # Her WordBoundary için harf uzunluğu hesapla ve kümülatif harf ekseninde eşle
+    wb_norm_lens = [max(1, len(_normalize_alnum_tr(w[2]))) for w in word_boundaries]
+    total_wb_chars = sum(wb_norm_lens)
+    sent_norm_lens = [max(1, len(_normalize_alnum_tr(ts))) for ts in tts_sentences]
+    total_sent_chars = sum(sent_norm_lens)
+    scale = (total_wb_chars / total_sent_chars) if total_sent_chars > 0 else 1.0
 
-    def flush_tr(pause_ms: int = 420):
-        if tr_buffer:
-            joined = "\n\n".join(tr_buffer).strip()
-            if joined:
-                segments.append(("tr", joined, pause_ms))
-            tr_buffer.clear()
+    # Kümülatif WB bitişleri
+    wb_cum_end: list[int] = []
+    acc = 0
+    for ln in wb_norm_lens:
+        acc += ln
+        wb_cum_end.append(acc)
 
-    for b in bloklar:
-        tip = b.get("tip", "paragraf")
-        metin = b.get("metin", "")
-        if tip == "arapca":
-            flush_tr(pause_ms=420)
-            for ar_clause, pause_ms in clean_arabic_for_tts(metin):
-                segments.append(("ar", ar_clause, pause_ms))
-        elif tip in ("hitap", "paragraf", "alinti"):
-            cleaned = clean_turkish_text_for_tts(metin)
-            if cleaned:
-                tr_buffer.append(cleaned)
+    results: list[dict] = []
+    wb_cursor = 0
+    sent_cum = 0.0
 
-    flush_tr(pause_ms=0)
-    return segments
+    for idx, ((c_start, c_end, _), s_len) in enumerate(zip(sentence_spans, sent_norm_lens)):
+        sent_cum += s_len * scale
+        start_wb = min(wb_cursor, len(word_boundaries) - 1)
+        if idx == len(sentence_spans) - 1:
+            end_wb = len(word_boundaries) - 1
+        else:
+            # sent_cum hedefine en yakın WB indeksini bul
+            end_wb = start_wb
+            while end_wb < len(word_boundaries) - 1 and wb_cum_end[end_wb] < sent_cum - 1.5:
+                end_wb += 1
+            # Eğer bir sonraki kelime bu cümlenin son kelimesiyle birebir örtüşüyorsa ilerlet
+            next_idx = end_wb + 1
+            if next_idx < len(word_boundaries):
+                sent_words = re.findall(r"[\wçğıöşüÇĞİÖŞÜ]+", tts_sentences[idx])
+                last_word_norm = _normalize_alnum_tr(sent_words[-1]) if sent_words else ""
+                next_wb_norm = _normalize_alnum_tr(word_boundaries[next_idx][2])
+                if last_word_norm and next_wb_norm and (
+                    next_wb_norm == last_word_norm or last_word_norm.endswith(next_wb_norm)
+                ):
+                    end_wb = next_idx
+
+        t0 = seg_offset_ms + word_boundaries[start_wb][0]
+        t1 = seg_offset_ms + word_boundaries[end_wb][1]
+        if results and t0 < results[-1]["t1"]:
+            t0 = results[-1]["t1"]
+        results.append({
+            "hedef": hedef_id,
+            "b": c_start,
+            "s": c_end,
+            "t0": int(t0),
+            "t1": int(max(t0 + 150, t1)),
+        })
+        wb_cursor = min(end_wb + 1, len(word_boundaries) - 1)
+
+    return results
 
 
 def is_salutation(line: str) -> bool:
@@ -383,7 +516,6 @@ def parse_hutbe_pdf(pdf_bytes: bytes, fallback_title: str, fallback_date: str) -
         if "din hizmetleri genel müdürlüğü" in ln.lower():
             continue
 
-        # Dipnot başlangıcı: "1 Bakara, 2/220." gibi
         if started_body and re.match(r"^\d{1,2}\s+[A-ZÇĞİÖŞÜ]", ln):
             in_footnotes = True
             m_fn = re.match(r"^(\d{1,2})\s+(.*)$", ln)
@@ -396,7 +528,6 @@ def parse_hutbe_pdf(pdf_bytes: bytes, fallback_title: str, fallback_date: str) -
                 dipnotlar[-1] = dipnotlar[-1] + " " + ln
             continue
 
-        # Başlangıçtaki Arapça ayet/hadis satırları
         if not started_body and has_arabic(ln):
             if ln == "﷽":
                 arapca_lines.append("بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ")
@@ -404,7 +535,6 @@ def parse_hutbe_pdf(pdf_bytes: bytes, fallback_title: str, fallback_date: str) -
                 arapca_lines.append(ln)
             continue
 
-        # İlk Türkçe hitap satırından önceki satır PDF başlığıdır
         if not started_body:
             if is_salutation(ln):
                 started_body = True
@@ -415,7 +545,6 @@ def parse_hutbe_pdf(pdf_bytes: bytes, fallback_title: str, fallback_date: str) -
 
         body_lines.append(ln)
 
-    # Gövde satırlarını akıllı paragraf bloklarına dönüştür
     bloklar: list[dict] = []
     current_para: list[str] = []
 
@@ -500,9 +629,7 @@ def discover_hutbe_links(limit: int = MAX_ARCHIVE) -> list[dict]:
 
 
 def extract_attachments(detail_html: str) -> tuple[str, str, str]:
-    """
-    Detay sayfasından (turkce_pdf_url, turkce_baslik, diyanet_mp3_url) döner.
-    """
+    """Detay sayfasından (turkce_pdf_url, turkce_baslik, diyanet_mp3_url) döner."""
     unescaped = html.unescape(detail_html)
     anchors = re.findall(
         r'<a[^>]+href=["\'](/Documents/[^"\']+)["\'][^>]*>(.*?)</a>',
@@ -526,8 +653,15 @@ def extract_attachments(detail_html: str) -> tuple[str, str, str]:
     return pdf_url, pdf_title, mp3_url
 
 
-async def _synthesize_segment(lang: str, text: str, retries: int = 3) -> bytes:
-    """Tek bir Türkçe veya Arapça bölümü uygun Neural AI sesiyle ham MP3 byte'larına çevirir."""
+async def _synthesize_segment_with_timings(
+    lang: str,
+    text: str,
+    retries: int = 3,
+) -> tuple[bytes, list[tuple[int, int, str]]]:
+    """
+    Tek bir Türkçe veya Arapça bölümü uygun Neural AI sesiyle sentezler;
+    hem ham MP3 byte'larını hem de `WordBoundary` zaman damgalarını `(start_ms, end_ms, word)` döner.
+    """
     if lang == "ar":
         voice = ARABIC_VOICE
         rate = "-14%"
@@ -541,17 +675,24 @@ async def _synthesize_segment(lang: str, text: str, retries: int = 3) -> bytes:
     for attempt in range(1, retries + 1):
         try:
             chunks = bytearray()
+            wbs: list[tuple[int, int, str]] = []
             communicate = edge_tts.Communicate(
                 text=text,
                 voice=voice,
                 rate=rate,
                 pitch=pitch,
+                boundary="WordBoundary",
             )
             async for chunk in communicate.stream():
-                if chunk["type"] == "audio":
+                ctype = chunk["type"]
+                if ctype == "audio":
                     chunks.extend(chunk["data"])
+                elif ctype == "WordBoundary":
+                    st_ms = int(chunk["offset"] // 10_000)
+                    en_ms = int((chunk["offset"] + chunk["duration"]) // 10_000)
+                    wbs.append((st_ms, en_ms, chunk.get("text", "")))
             if len(chunks) > 500:
-                return bytes(chunks)
+                return bytes(chunks), wbs
             raise RuntimeError("Boş ses akışı döndü")
         except Exception as e:
             last_err = e
@@ -561,43 +702,135 @@ async def _synthesize_segment(lang: str, text: str, retries: int = 3) -> bytes:
     raise RuntimeError(f"TTS segment failed ({lang}): {last_err}")
 
 
-async def generate_ai_audio(segments: list[tuple[str, str, int]], out_path: Path) -> bool:
+async def generate_ai_audio_with_timings(
+    baslik: str,
+    tarih_uzun: str,
+    arapca_giris: str,
+    bloklar: list[dict],
+    out_path: Path,
+) -> tuple[bool, list[dict]]:
     """
-    Türkçe (tr-TR-AhmetNeural) ve Arapça (ar-SA-HamedNeural) parçaları sırasıyla üretir
-    ve aralarına pürüzsüz sessizlik kareleri ekleyerek tek bir MP3 dosyasında birleştirir.
+    Hutbenin tüm bölümlerini sırasıyla sentezler, tek MP3 dosyasında birleştirir ve
+    ekrandaki metinle birebir örtüşen milisaniye hassasiyetli `zamanlar` listesini üretir.
     """
     try:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         combined = bytearray()
+        zamanlar: list[dict] = []
         ar_count = 0
         tr_count = 0
 
-        for idx, (lang, text, pause_ms) in enumerate(segments):
-            if not text.strip():
-                continue
-            seg_bytes = await _synthesize_segment(lang, text)
-            combined.extend(seg_bytes)
-            if lang == "ar":
+        def current_cursor_ms() -> int:
+            return int(round((len(combined) / MP3_FRAME_BYTES) * MP3_FRAME_MS))
+
+        def append_pause(pause_ms: int):
+            if pause_ms > 0:
+                frames = max(1, round(pause_ms / MP3_FRAME_MS))
+                combined.extend(SILENT_MP3_FRAME_24MS * frames)
+
+        # 1. Türkçe açılış anonsu (ekranda başlık + tarih)
+        intro_text = f"{tarih_uzun} Cuma Hutbesi. Konumuz: {baslik}."
+        intro_bytes, _ = await _synthesize_segment_with_timings("tr", intro_text)
+        combined.extend(intro_bytes)
+        tr_count += 1
+        append_pause(450)
+
+        # 2. Arapça açılış ayet ve hadisleri (hedef = -1 -> arapcaGiris)
+        if arapca_giris:
+            for c_start, c_end, ar_tts, pause_ms in split_arabic_clauses_with_spans(arapca_giris):
+                seg_start_ms = current_cursor_ms()
+                seg_bytes, wbs = await _synthesize_segment_with_timings("ar", ar_tts)
+                seg_dur_ms = int(round((len(seg_bytes) / MP3_FRAME_BYTES) * MP3_FRAME_MS))
+                combined.extend(seg_bytes)
                 ar_count += 1
-            else:
+
+                t0 = seg_start_ms + (wbs[0][0] if wbs else 0)
+                t1 = seg_start_ms + (wbs[-1][1] if wbs else seg_dur_ms)
+                zamanlar.append({
+                    "hedef": -1,
+                    "b": c_start,
+                    "s": c_end,
+                    "t0": int(t0),
+                    "t1": int(max(t0 + 200, t1)),
+                })
+                append_pause(pause_ms)
+
+        # 3. Hutbe gövde blokları (blok indeksine göre birebir eşlenmiş cümle zamanlamaları)
+        for idx, blok in enumerate(bloklar):
+            tip = blok.get("tip", "paragraf")
+            display_metin = blok.get("metin", "")
+            if not display_metin.strip():
+                continue
+
+            is_last_block = (idx == len(bloklar) - 1)
+
+            if tip == "arapca":
+                clauses = split_arabic_clauses_with_spans(display_metin)
+                for c_start, c_end, ar_tts, pause_ms in clauses:
+                    seg_start_ms = current_cursor_ms()
+                    seg_bytes, wbs = await _synthesize_segment_with_timings("ar", ar_tts)
+                    seg_dur_ms = int(round((len(seg_bytes) / MP3_FRAME_BYTES) * MP3_FRAME_MS))
+                    combined.extend(seg_bytes)
+                    ar_count += 1
+
+                    t0 = seg_start_ms + (wbs[0][0] if wbs else 0)
+                    t1 = seg_start_ms + (wbs[-1][1] if wbs else seg_dur_ms)
+                    zamanlar.append({
+                        "hedef": idx,
+                        "b": c_start,
+                        "s": c_end,
+                        "t0": int(t0),
+                        "t1": int(max(t0 + 200, t1)),
+                    })
+                    if not is_last_block:
+                        append_pause(pause_ms)
+            elif tip in ("hitap", "paragraf", "alinti"):
+                sent_spans = split_turkish_sentences_with_spans(display_metin)
+                tts_sentences = [clean_turkish_text_for_tts(s[2]) for s in sent_spans]
+                paired = [
+                    (sp, ts) for sp, ts in zip(sent_spans, tts_sentences) if ts
+                ]
+                if not paired:
+                    continue
+                valid_spans = [p[0] for p in paired]
+                valid_tts = [p[1] for p in paired]
+                block_tts_text = " ".join(valid_tts)
+
+                seg_start_ms = current_cursor_ms()
+                seg_bytes, wbs = await _synthesize_segment_with_timings("tr", block_tts_text)
+                seg_dur_ms = int(round((len(seg_bytes) / MP3_FRAME_BYTES) * MP3_FRAME_MS))
+                combined.extend(seg_bytes)
                 tr_count += 1
 
-            # Son parça değilse doğal nefes / geçiş duraklaması ekle
-            if pause_ms > 0 and idx < len(segments) - 1:
-                frame_count = max(1, round(pause_ms / 24))
-                combined.extend(SILENT_MP3_FRAME_24MS * frame_count)
+                aligned = _align_sentences_to_word_boundaries(
+                    sentence_spans=valid_spans,
+                    tts_sentences=valid_tts,
+                    word_boundaries=wbs,
+                    seg_offset_ms=seg_start_ms,
+                    seg_duration_ms=seg_dur_ms,
+                    hedef_id=idx,
+                )
+                zamanlar.extend(aligned)
+
+                if not is_last_block:
+                    pause_ms = 240 if tip == "hitap" else 340
+                    append_pause(pause_ms)
 
         if len(combined) <= 10_000:
-            return False
+            return False, []
 
         tmp_path = out_path.with_suffix(".mp3.tmp")
         tmp_path.write_bytes(bytes(combined))
         tmp_path.replace(out_path)
-        print(f"    [TTS] {out_path.name} üretildi (AR: {ar_count} parça, TR: {tr_count} parça, {len(combined)//1024} KB)")
-        return True
+        total_sec = round((len(combined) / MP3_FRAME_BYTES) * MP3_FRAME_MS / 1000.0, 1)
+        print(
+            f"    [TTS] {out_path.name} üretildi "
+            f"(AR: {ar_count}, TR: {tr_count}, {len(zamanlar)} cümle zamanı, {total_sec}s, {len(combined)//1024} KB)"
+        )
+        return True, zamanlar
     except Exception as e:
         print(f"[WARN] AI audio generation failed for {out_path.name}: {e}", file=sys.stderr)
-        return False
+        return False, []
 
 
 async def main() -> int:
@@ -636,6 +869,7 @@ async def main() -> int:
         if (
             cached
             and cached.get("bloklar")
+            and cached.get("zamanlar")
             and cached.get("ses_versiyon") == AUDIO_VERSION
             and audio_path.exists()
             and audio_path.stat().st_size > 10_000
@@ -660,14 +894,13 @@ async def main() -> int:
                 print(f"[WARN] #{hid} PDF metni boş çıktı, atlanıyor.", file=sys.stderr)
                 continue
 
-            # Arapça + Türkçe çift sesli yapay zeka hutbe MP3 üret
-            segments = build_tts_segments(
+            ai_ok, zamanlar = await generate_ai_audio_with_timings(
                 parsed["baslik"],
                 parsed["tarih_uzun"],
                 parsed["arapca_giris"],
                 parsed["bloklar"],
+                audio_path,
             )
-            ai_ok = await generate_ai_audio(segments, audio_path)
 
             item_obj = {
                 "id": hid,
@@ -679,6 +912,7 @@ async def main() -> int:
                 "arapca_giris": parsed["arapca_giris"],
                 "bloklar": parsed["bloklar"],
                 "dipnotlar": parsed["dipnotlar"],
+                "zamanlar": zamanlar if ai_ok else [],
                 "ai_ses_url": ai_audio_url if ai_ok else "",
                 "diyanet_ses_url": diyanet_mp3_url,
                 "kaynak_url": encode_url(entry["url"]),
@@ -687,7 +921,7 @@ async def main() -> int:
             results.append(item_obj)
             if ai_ok:
                 keep_audio_files.add(audio_filename)
-            print(f"[OK] #{hid} hazır: {parsed['baslik']} (AI ses v{AUDIO_VERSION}: {ai_ok}, {len(parsed['bloklar'])} blok)")
+            print(f"[OK] #{hid} hazır: {parsed['baslik']} (v{AUDIO_VERSION}: {ai_ok}, {len(zamanlar)} takip aralığı)")
         except Exception as e:
             print(f"[WARN] #{hid} işlenirken hata: {e}", file=sys.stderr)
             if cached:
@@ -702,7 +936,7 @@ async def main() -> int:
 
     results.sort(key=lambda x: (x.get("tarih_iso") or "", int(x.get("id") or 0)), reverse=True)
 
-    # Eski ses dosyalarını (v1 ve arşiv dışı) temizle
+    # Eski sürüm ve arşiv dışı ses dosyalarını temizle
     for f in AUDIO_DIR.glob("hutbe_*.mp3"):
         if f.name not in keep_audio_files:
             try:
@@ -714,7 +948,7 @@ async def main() -> int:
     payload = {
         "guncelleme_zamani": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "kaynak": "T.C. Diyanet İşleri Başkanlığı · Din Hizmetleri Genel Müdürlüğü",
-        "ses_motoru": f"TR:{TURKISH_VOICE} + AR:{ARABIC_VOICE} (v{AUDIO_VERSION})",
+        "ses_motoru": f"TR:{TURKISH_VOICE} + AR:{ARABIC_VOICE} + WordBoundary Sync (v{AUDIO_VERSION})",
         "guncel": results[0],
         "hutbeler": results,
     }
